@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+        <title>Fractals Representation</title>
+    </head>
+    <body onload="init()">
+        <script>
+            //console.log("In Script");
+
+            /*********************************** Variables *******************************************************/
+
+            // The x/y position to start from
+			var X = 0;
+			var Y = 0;
+			// the width/height of the fractal
+			var w = 400;
+            var h = 400;
+            
+            var c;
+            var ctx;
+		
+			// depth
+			var depth = 7; // default
+			
+			// points array to plot
+            var pt = [];
+            
+            var selectedFractal = 1;
+
+			var timer;
+
+            /*********************************** Common/Utility **************************************************/
+
+            function updateSelection()
+            {
+                //get the selection
+                var e = document.getElementById("fractalSelection");
+                selectedFractal = e.options[e.selectedIndex].value;
+                init();
+            }
+
+			// fill the canvas with a white square
+			function init()
+			{
+				if (timer)
+					clearInterval(timer);
+
+                //console.log("In Init");
+                if (selectedFractal == 1)
+                    initTsquare();
+                else if (selectedFractal == 2)
+                    initPythagoras();
+
+                c = document.getElementById("canvas");
+                ctx = c.getContext("2d");
+                ctx.clearRect(0, 0, c.width, c.height);
+                ctx.fillStyle = "#FFFFFF";
+                ctx.fillRect(X,Y,w,h);
+                
+                //step1();
+            }
+
+            function initTsquare()
+            {
+                X = 0;
+			    Y = 0;
+                w = 400;
+                h = 400;
+                document.getElementById("aboutTsquare").style.display = "block";
+                document.getElementById("aboutPythagoras").style.display = "none";
+                document.getElementById("option7").selected = "true";
+            }
+
+            function initPythagoras()
+            {
+                w = 600;
+                h = 500;
+                document.getElementById("aboutTsquare").style.display = "none";
+                document.getElementById("aboutPythagoras").style.display = "block";
+                document.getElementById("option11").selected = "true";
+            }
+            
+            function step1()
+            {
+                if (selectedFractal == 1)
+                    step1Tsqaure();
+                else if (selectedFractal == 2)
+                    step1Pythagoras();
+            }
+
+            function step2()
+            {
+				init();
+				step1();
+                if (selectedFractal == 1)
+					timer = setTimeout(step2Tsqaure, 1000);
+                else if (selectedFractal == 2)
+					timer = setTimeout(step2Pythagoras, 1000);
+            }
+
+            // trigger drawing of squares
+			function timerHandler(event)
+			{
+                if (selectedFractal == 1)
+                    drawRecursivelyTsqaure(pt);
+                else if (selectedFractal == 2)
+                    drawRecursivelyPythagoras(pt);
+            }
+
+            /*********************************** T-Square ********************************************************/
+			
+			// draw the first black square in the middle
+			function step1Tsqaure()
+			{
+                //console.log("In Step 1");
+                ctx.fillStyle = "#000000";
+				ctx.fillRect(X + w/4, Y + h/4, w/2, h/2);
+			}
+			
+			// start drawing the squares recusively
+			function step2Tsqaure()
+			{
+                //console.log("In Step 2");
+                var e = document.getElementById("depthCB");
+                depth = e.options[e.selectedIndex].value;
+				var point = [{X:X, Y:Y, w:w, h:h}];
+				drawRecursivelyTsqaure(point);
+			}
+			
+			// recursive method to draw the squares
+			function drawRecursivelyTsqaure(points)
+			{
+				pt = [];
+				for (var i = 0; i < points.length ; i++)
+				{
+					var localX = points[i].X;
+					var localY = points[i].Y;
+					var localW = points[i].w;
+					var localH = points[i].h;
+					
+					drawSquare(localX, localY, localW/2, localH/2);
+					pt.push({X:localX, Y:localY, w:localW/2, h:localH/2});
+					
+					drawSquare(localX + localW/2, localY, localW/2, localH/2);
+					pt.push({X:localX + localW/2, Y:localY, w:localW/2, h:localH/2});
+					
+					drawSquare(localX, localY + localH/2, localW/2, localH/2);
+					pt.push({X:localX, Y:localY + localH/2, w:localW/2, h:localH/2});
+					
+					drawSquare(localX + localW/2, localY + localH/2, localW/2, localH/2);
+					pt.push({X:localX + localW/2, Y:localY + localH/2, w:localW/2, h:localH/2});
+				}
+				
+				depth--;
+				if (depth <= 0 )
+					return;
+				
+                timer = setTimeout(timerHandler, 1000); // comment this line and uncomment the next one to get the fractal drawn instantly
+                //drawRecursivelyTsqaure(pt);
+            }
+
+            // draw the squares given the positions
+			function drawSquare(X, Y, w, h)
+			{
+                ctx.fillStyle = "#000000";
+				ctx.fillRect(X + w/4, Y + h/4, w/2, h/2);
+			}
+
+            /*********************************** T-Pythagoras ****************************************************/
+
+            /* Calculation of x and y - finding a point perpendicular a line
+			 * and at a given distance from it.
+			 *
+			 * Finding (x4,y4) - given (x1,y1), (x2,y2), (x3,y3) and L.
+			 * 
+			 *                                 | (x4,y4)
+			 *                                 |
+			 *                                 | L
+			 *                                 |
+			 *                                 | 
+			 *                  o--------------o--------------o
+			 *                (x1,y1)       (x3,y3)         (x2,y2)
+			 *
+			 * y - y1 = ((y3-y1)/(x3-x1))*(x-x1)
+			 * 
+			 * m = (y3-y1)/(x3-x1)
+			 *
+			 * y = mx + c => c = y - mx => c = y3 + x3/m
+			 *
+			 * y - y3 = -x/m + x3/m
+			 *
+			 * y4 - y3 = -(x4-x3)/m  ---- (1)
+			 *
+			 * y4 = y3 + (x3 - x4)/m  ---- (2)
+			 *
+			 * (y4 - y3)2 + (x4 - x3)2 = L2/4
+			 *
+			 * (x4 - x3)2/m2 + (x4 - x3)2 = L2/4 ---- (substituting the value from (1))
+			 *
+			 * simplifying more,
+			 *
+			 * x4 = +- sqrt(L2 * m2/(4*(1 + m2))) + x3 ---- (3)
+			 *
+			 * so, we can get x4 and y4 by first finding x4 and
+			 * then using (2) to get y4. 
+			 */
+            
+            function step1Pythagoras()
+			{
+                //console.log("In Step 1 - Pythagoras");
+                ctx.fillStyle = "#000000";
+				X = 260;
+				Y = 360;
+				w = 80;
+				h = 80;
+				ctx.fillRect(X, Y, w, h);
+            }
+            
+            // start drawing the squares recusively
+			function step2Pythagoras()
+			{
+                //console.log("In Step 2");
+                var e = document.getElementById("depthCB");
+                depth = e.options[e.selectedIndex].value;
+				var point = [{X1:X, Y1:Y, X2:X+w/2, Y2:Y, w:w, h:h}];
+				drawRecursivelyPythagoras(point);
+			}
+			
+			// recursive method to draw the squares
+			function drawRecursivelyPythagoras(points)
+			{
+                ctx.beginPath();
+                ctx.fillStyle = "black";
+				pt = [];
+				for (var i = 0; i < points.length; i++)
+				{
+					var localX1 = points[i].X1;
+					var localY1 = points[i].Y1;
+					var localX2 = points[i].X2;
+					var localY2 = points[i].Y2;
+					
+					var localW = points[i].w;
+					var localH = points[i].h;
+					
+					ctx.fillStyle = "#000000";
+					ctx.moveTo(localX1, localY1);
+					
+					var c = Math.SQRT2 * localW/2;
+					// left square
+					var pt1 = drawPerpendicularLine(localX1, localY1, localX2, localY2, localW);
+					var pt2 = drawPerpendicularLine(localX1, localY1, pt1.X, pt1.Y, c*2);
+					var pt3 = drawPerpendicularLine(pt1.X, pt1.Y, pt2.X, pt2.Y, c*2);
+					var pt4 = drawPerpendicularLine(pt2.X, pt2.Y, pt3.X, pt3.Y, c*2);
+					
+					// right square
+					localX1 = 2*localX2 - localX1;
+					localY1 = 2*localY2 - localY1;
+					ctx.moveTo(pt1.X, pt1.Y);
+					ctx.lineTo(localX1, localY1);
+					var pt5 = drawPerpendicularLine(pt1.X, pt1.Y, localX1, localY1, c*2);
+					var pt6 = drawPerpendicularLine(localX1, localY1, pt5.X, pt5.Y, c*2);
+					var pt7 = drawPerpendicularLine(pt5.X, pt5.Y, pt6.X, pt6.Y, c*2);
+					
+					pt.push({X1:pt3.X, Y1:pt3.Y, X2:(pt3.X + pt2.X)/2, Y2:(pt3.Y + pt2.Y)/2, w:c, h:c});
+					pt.push({X1:pt6.X, Y1:pt6.Y, X2:(pt5.X + pt6.X)/2, Y2:(pt5.Y + pt6.Y)/2, w:c, h:c});
+                }
+                ctx.fill();
+                ctx.stroke();
+				
+				depth--;
+				if (depth <= 0)
+					return;
+				
+                timer = setTimeout(timerHandler, 1000); // comment this line and uncomment the next one to get the fractal drawn instantly
+                //drawRecursivelyPythagoras(pt);
+            }
+
+            /* draw a line perpendicular to a given line
+			 * and at a particular distance from the line
+			 *
+			 */
+			function drawPerpendicularLine(x1, y1, x2, y2, w)
+			{
+				var m = (y2-y1)/(x2-x1);
+					
+				var X3;
+				if (x2 - x1 < 0 && m < 0)
+					X3 = getX(w, m, x2);
+				else if (x2 - x1 < 0 || m < 0)
+				{
+					X3 = -getX(w, m, -x2);
+				}
+				else 
+					X3 = getX(w, m, x2);
+				
+				var Y3 = getY(w, x1, y2, x2, X3, m);
+				
+				ctx.lineTo(X3, Y3);
+				
+				return {X:X3, Y:Y3};
+			}
+
+            // get the X
+			function getX(w, m, x)
+			{
+				if (m == 0)
+					return x;
+				else if (m == Number.NEGATIVE_INFINITY)
+					return x + w/2;
+				else if (m == Number.POSITIVE_INFINITY)
+					return x + w/2;
+				else
+				{
+					var temp = 4 * (1+Math.pow(m,2));
+					var newX = x + Math.sqrt(Math.pow(w,2) * Math.pow(m,2)/temp);
+					return newX;
+				}
+			}
+			
+			function getY(w, x1, y, x2, x3, m)
+			{
+				if (m == 0)
+					if (x2 - x1 > 0)
+						return y - w/2;
+					else
+						return y + w/2;
+				
+				return y + (x2 - x3)/m;
+			}
+
+        </script>
+
+        <div class="container-lg">
+
+            <div class="jumbotron" style="padding:1em">
+                <h2 class="display-4">Fractals Representation</h1>
+                <!-- <p class="lead">This is a sample for demonstrating how Fractals are created!</p> -->
+                <p>
+                    A sample for demonstrating how Fractals are created!
+                    It uses html components such as canvas to demonstrate the creation in a step by step way.
+                </p>
+            </div>
+
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Select Fractal:</span>
+                </div>
+                <select id="fractalSelection" class="form-control" onchange="updateSelection()">
+                  <option value="1" selected="selected">T-Square Fractal</option>
+                  <option value="2">Pythagoras Tree Fractal</option>
+                </select>
+			</div>
+
+			<div class="container-lg">
+				<div class="row">
+					<div class="col-sm">
+						<span class="input-group-text">Select Depth:</span>
+						<select id="depthCB" class="form-control">
+						<option value="1">1</option>
+						<option value="2">2</option>
+						<option value="3">3</option>
+						<option value="4">4</option>
+						<option value="5">5</option>
+						<option value="6">6</option>
+						<option value="7" id="option7">7</option>
+						<option value="8">8</option>
+						<option value="9">9</option>
+						<option value="10">10</option>
+						<option value="11" id="option11">11</option>
+						</select>
+					</div>
+					<div class="col-sm">
+						<button type="button" class="btn btn-success" onclick="step2()">Create Fractal</button>
+						<button type="button" class="btn btn-secondary" onclick="init()">Reset</button>
+					</div>
+					<div class="col-sm">
+						<div id="aboutTsquare" class="float-right" >
+							Learn more about <a href="https://en.wikipedia.org/wiki/T-square_%28fractal%29">T-Square Fractal</a>
+						</div>
+						<div id="aboutPythagoras" class="float-right" >
+							Learn more about <a href="https://en.wikipedia.org/wiki/Pythagoras_tree_(fractal)">Pythagoras Fractal</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<br>
+
+            <div style="margin:0 auto; align-self:auto;">
+                <canvas id="canvas" width="600" height="500"></canvas>
+            </div>
+        </div>
+
+    </body>
+</html>
